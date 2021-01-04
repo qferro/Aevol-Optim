@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(pdc_mini_aevol)
 
+set(USE_OMP ON CACHE BOOL "Whether to enable OpenMP parallelization")
+
 set(CMAKE_CXX_STANDARD 14)
 
 if ( DO_TRACES )
