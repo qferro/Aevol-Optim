@@ -5,6 +5,7 @@ set(USE_OMP ON CACHE BOOL "Whether to enable OpenMP parallelization")
 
 set(CMAKE_CXX_STANDARD 14)
 
+
 if ( DO_TRACES )
     add_definitions(-DTRACES)
     message( STATUS "Traces are activated" )
