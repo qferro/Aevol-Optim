@@ -141,7 +141,6 @@ void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
 int Dna::promoter_at(int pos) {
     std::vector<bool> prom_dist(PROM_SIZE);
 
-    /*
     for (int motif_id = 0; motif_id < PROM_SIZE; motif_id++) {
         int search_pos = pos + motif_id;
         if (search_pos >= seq_.size())
@@ -152,7 +151,7 @@ int Dna::promoter_at(int pos) {
                 PROM_SEQ[motif_id] == seq_[search_pos] ? 0 : 1;
 
     }
-    */
+    /* see other branch
     #pragma omp for
     for (int motif_id = 0; motif_id < PROM_SIZE; motif_id++) {
         int search_pos = pos + motif_id;
@@ -161,10 +160,11 @@ int Dna::promoter_at(int pos) {
         // Searching for the promoter
         prom_dist[motif_id] = (PROM_SEQ[motif_id] ^ seq_[search_pos]);
     }
+    */
 
     // Computing if a promoter exists at that position
-    int dist_lead = std::count(prom_dist.begin(), prom_dist.end(), true);
-    /*
+    //int dist_lead = std::count(prom_dist.begin(), prom_dist.end(), true);
+
     int dist_lead = prom_dist[0] +
                     prom_dist[1] +
                     prom_dist[2] +
@@ -187,7 +187,7 @@ int Dna::promoter_at(int pos) {
                     prom_dist[19] +
                     prom_dist[20] +
                     prom_dist[21];
-        */
+        
 
     return dist_lead;
 }
