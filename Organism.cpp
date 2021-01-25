@@ -708,4 +708,3 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
         }
     }
 }
-

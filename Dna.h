@@ -33,7 +33,7 @@ public:
     void remove(int pos_1, int pos_2);
 
     /// Insert a sequence of a given length at a given position into the DNA of the Organism
-    void insert(int pos, std::vector<char> seq);
+    void insert(int pos, std::vector<bool> seq);
 
     /// Insert a sequence of a given length at a given position into the DNA of the Organism
     void insert(int pos, Dna *seq);
@@ -52,5 +52,5 @@ public:
 
     int codon_at(int pos);
 
-    std::vector<char> seq_;
+    std::vector<bool> seq_;
 };

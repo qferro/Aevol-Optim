@@ -8,8 +8,14 @@
 
 Dna::Dna(int length, Threefry::Gen &&rng) : seq_(length) {
     // Generate a random genome
+    /*
     for (int32_t i = 0; i < length; i++) {
         seq_[i] = '0' + rng.random(NB_BASE);
+    }
+    */
+    // Make DNA a vector<bool>
+    for (int32_t i = 0; i < length; i++) {
+        seq_[i] = rng.random(NB_BASE);
     }
 }
 
@@ -18,19 +24,29 @@ int Dna::length() const {
 }
 
 void Dna::save(gzFile backup_file) {
-    int dna_length = length();
+    int32_t dna_length = length();
+    char tmp_seq[dna_length];
     gzwrite(backup_file, &dna_length, sizeof(dna_length));
-    gzwrite(backup_file, seq_.data(), dna_length * sizeof(seq_[0]));
+
+    for (int i = 0; i < dna_length; i++) {
+        if(seq_[i]) {
+            tmp_seq[i] = '1';
+        } else {
+            tmp_seq[i] = '0';
+        }
+    }
+
+    gzwrite(backup_file, &tmp_seq[0], dna_length * sizeof(tmp_seq[0]));
 }
 
 void Dna::load(gzFile backup_file) {
-    int dna_length;
+    int32_t dna_length;
     gzread(backup_file, &dna_length, sizeof(dna_length));
 
     char tmp_seq[dna_length];
     gzread(backup_file, tmp_seq, dna_length * sizeof(tmp_seq[0]));
 
-    seq_ = std::vector<char>(tmp_seq, tmp_seq + dna_length);
+    seq_ = std::vector<bool>(tmp_seq, tmp_seq + dna_length);
 }
 
 void Dna::set(int pos, char c) {
@@ -55,7 +71,7 @@ void Dna::remove(int pos_1, int pos_2) {
  * @param seq : the sequence itself
  * @param seq_length : the size of the sequence
  */
-void Dna::insert(int pos, std::vector<char> seq) {
+void Dna::insert(int pos, std::vector<bool> seq) {
 // Insert sequence 'seq' at position 'pos'
     assert(pos >= 0 && pos < seq_.size());
 
@@ -77,8 +93,8 @@ void Dna::insert(int pos, Dna *seq) {
 }
 
 void Dna::do_switch(int pos) {
-    if (seq_[pos] == '0') seq_[pos] = '1';
-    else seq_[pos] = '0';
+    if (seq_[pos]) seq_[pos] = 0;
+    else seq_[pos] = 1;
 }
 
 void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
@@ -97,8 +113,8 @@ void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
         //                                             -----      |
         //                                             pos_2    <-'
         //
-        std::vector<char> seq_dupl =
-                std::vector<char>(seq_.begin() + pos_1, seq_.begin() + pos_2);
+        std::vector<bool> seq_dupl =
+                std::vector<bool>(seq_.begin() + pos_1, seq_.begin() + pos_2);
 
         insert(pos_3, seq_dupl);
     } else { // if (pos_1 >= pos_2)
@@ -114,8 +130,8 @@ void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
         //                                                  -----
         //
         //
-        std::vector<char>
-                seq_dupl = std::vector<char>(seq_.begin() + pos_1, seq_.end());
+        std::vector<bool>
+                seq_dupl = std::vector<bool>(seq_.begin() + pos_1, seq_.end());
         seq_dupl.insert(seq_dupl.end(), seq_.begin(), seq_.begin() + pos_2);
 
         insert(pos_3, seq_dupl);
@@ -123,20 +139,32 @@ void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
 }
 
 int Dna::promoter_at(int pos) {
-    int prom_dist[PROM_SIZE];
+    std::vector<bool> prom_dist(PROM_SIZE);
 
+    /*
     for (int motif_id = 0; motif_id < PROM_SIZE; motif_id++) {
         int search_pos = pos + motif_id;
         if (search_pos >= seq_.size())
             search_pos -= seq_.size();
+
         // Searching for the promoter
         prom_dist[motif_id] =
                 PROM_SEQ[motif_id] == seq_[search_pos] ? 0 : 1;
 
     }
-
+    */
+    #pragma omp for
+    for (int motif_id = 0; motif_id < PROM_SIZE; motif_id++) {
+        int search_pos = pos + motif_id;
+        if (search_pos >= seq_.size())
+            search_pos -= seq_.size();
+        // Searching for the promoter
+        prom_dist[motif_id] = (PROM_SEQ[motif_id] ^ seq_[search_pos]);
+    }
 
     // Computing if a promoter exists at that position
+    int dist_lead = std::count(prom_dist.begin(), prom_dist.end(), true);
+    /*
     int dist_lead = prom_dist[0] +
                     prom_dist[1] +
                     prom_dist[2] +
@@ -159,6 +187,7 @@ int Dna::promoter_at(int pos) {
                     prom_dist[19] +
                     prom_dist[20] +
                     prom_dist[21];
+        */
 
     return dist_lead;
 }
@@ -189,6 +218,15 @@ int Dna::terminator_at(int pos) {
 bool Dna::shine_dal_start(int pos) {
     bool start = false;
     int t_pos, k_t;
+    int32_t dna_length = length();
+    char tmp_seq[dna_length];
+    for (int i = 0; i < dna_length; i++) {
+        if(seq_[i]) {
+            tmp_seq[i] = '1';
+        } else {
+            tmp_seq[i] = '0';
+        }
+    }
 
     for (int k = 0; k < SHINE_DAL_SIZE + CODON_SIZE; k++) {
         k_t = k >= SHINE_DAL_SIZE ? k + SD_START_SPACER : k;
@@ -196,7 +234,7 @@ bool Dna::shine_dal_start(int pos) {
         if (t_pos >= seq_.size())
             t_pos -= seq_.size();
 
-        if (seq_[t_pos] == SHINE_DAL_SEQ[k_t]) {
+        if (tmp_seq[t_pos] == SHINE_DAL_SEQ[k_t]) {
             start = true;
         } else {
             start = false;
@@ -236,7 +274,7 @@ int Dna::codon_at(int pos) {
         t_pos = pos + i;
         if (t_pos >= seq_.size())
             t_pos -= seq_.size();
-        if (seq_[t_pos] == '1')
+        if (seq_[t_pos])
             value += 1 << (CODON_SIZE - i - 1);
     }
 

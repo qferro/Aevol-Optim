@@ -28,6 +28,7 @@
 
 #include <iostream>
 #include <zlib.h>
+#include <omp.h>
 
 using namespace std;
 
@@ -180,11 +181,11 @@ void ExpManager::save(int t) const {
         exit(EXIT_FAILURE);
     }
 
-
     // -------------------------------------------------------------------------
     // Write the backup file
     // -------------------------------------------------------------------------
     gzwrite(exp_backup_file, &t, sizeof(t));
+
 
     gzwrite(exp_backup_file, &grid_height_, sizeof(grid_height_));
     gzwrite(exp_backup_file, &grid_width_, sizeof(grid_width_));
@@ -366,6 +367,8 @@ void ExpManager::prepare_mutation(int indiv_id) const {
 void ExpManager::run_a_step() {
 
     // Running the simulation process for each organism
+    omp_set_nested (1);
+    #pragma omp parallel for
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         selection(indiv_id);
         prepare_mutation(indiv_id);
@@ -378,6 +381,7 @@ void ExpManager::run_a_step() {
     }
 
     // Swap Population
+    #pragma omp parallel for
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id];
         internal_organisms_[indiv_id] = nullptr;
@@ -445,6 +449,7 @@ void ExpManager::run_evolution(int nb_gen) {
         }
 
         if (AeTime::time() % backup_step_ == 0) {
+
             save(AeTime::time());
             cout << "Backup for generation " << AeTime::time() << " done !" << endl;
         }
