@@ -139,7 +139,8 @@ void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
 }
 
 int Dna::promoter_at(int pos) {
-    std::vector<bool> prom_dist(PROM_SIZE);
+    //use profiler -> cmake gprof
+    int prom_dist[PROM_SIZE];
 
     for (int motif_id = 0; motif_id < PROM_SIZE; motif_id++) {
         int search_pos = pos + motif_id;
@@ -187,7 +188,7 @@ int Dna::promoter_at(int pos) {
                     prom_dist[19] +
                     prom_dist[20] +
                     prom_dist[21];
-        
+
 
     return dist_lead;
 }
